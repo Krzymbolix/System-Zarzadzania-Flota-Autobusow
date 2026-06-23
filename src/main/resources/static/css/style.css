@@ -1,0 +1,16 @@
+.imageBackground {
+    background-image: url('../assets/img/AI_tlo_strony.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+}
+.transparent-table,
+.transparent-table thead,
+.transparent-table tbody,
+.transparent-table tr,
+.transparent-table th,
+.transparent-table td {
+    background-color: transparent !important;
+    color: white !important;
+}

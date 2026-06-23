@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleafextras-springsecurity6">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Zarządzanie Bazami - Panel Administratora</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+
+    <style>
+        .table-input {
+            width: 100%;
+            border: 1px solid #dee2e6;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.25rem;
+            transition: all 0.3s;
+        }
+        .table-input:focus {
+            border-color: #86b7fe;
+            outline: 0;
+            box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25);
+        }
+        .table-input.valid {
+            border-color: #198754;
+            box-shadow: 0 0 0 0.25rem rgba(25,135,84,.25);
+        }
+        .table-input.invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.25rem rgba(220,53,69,.25);
+        }
+        .table-input[readonly] {
+            background-color: #e9ecef;
+            opacity: 1;
+        }
+        .narrow-font {
+            font-family: 'Courier New', monospace;
+        }
+        .form-card {
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 1.5rem;
+            background-color: #f8f9fa;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-available {
+            background-color: #28a745;
+        }
+        .status-taken {
+            background-color: #dc3545;
+        }
+        .btn-check:checked + .btn-outline-success {
+            background-color: #198754;
+            color: white;
+        }
+        .btn-check:checked + .btn-outline-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+            border-width: 0.2em;
+        }
+
+        /* Toast Animations */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .toast {
+            min-width: 300px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            border-radius: 0.5rem;
+            margin-bottom: 0.75rem;
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        .toast.fade {
+            animation: slideOutRight 0.3s ease-out;
+        }
+
+        /* Toast icons */
+        .toast-body i {
+            font-size: 1.2rem;
+        }
+
+        /* Animation for success update */
+        .table-success {
+            background-color: rgba(40, 167, 69, 0.1) !important;
+            transition: background-color 0.5s ease;
+        }
+
+        /* Smooth row removal */
+        .fade-out {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" th:href="@{/admin/main}">
+            <i class="bi bi-bus-front me-2"></i>System Transportu Miejskiego
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarAdmin">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarAdmin">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/admin/main}">
+                        <i class="bi bi-speedometer2 me-1"></i>Panel główny
+                    </a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdown" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-database me-1"></i>Zarządzaj danymi
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li><h6 class="dropdown-header">System</h6></li>
+                        <li><a class="dropdown-item active" th:href="@{/admin/bazy}"><i class="bi bi-building me-2"></i>Bazy</a></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/pracownicy}"><i class="bi bi-people me-2"></i>Pracownicy</a></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/kierowcy}"><i class="bi bi-person-badge me-2"></i>Kierowcy</a></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/autobusy}"><i class="bi bi-bus-front me-2"></i>Autobusy</a></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/administratorzy}"><i class="bi bi-shield-check me-2"></i>Administratorzy</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header">Transport</h6></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/linie}"><i class="bi bi-signpost me-2"></i>Linie</a></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/przystanki}"><i class="bi bi-signpost-split me-2"></i>Przystanki</a></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/linia-przystanek}"><i class="bi bi-link me-2"></i>Linia-Przystanek</a></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/kursy}"><i class="bi bi-clock-history me-2"></i>Kursy</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/}">
+                        <i class="bi bi-house me-1"></i>Strona publiczna
+                    </a>
+                </li>
+            </ul>
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle me-1"></i>
+                        <span style="color:lightskyblue;" sec:authentication="principal.imie"></span>
+                        <span class="badge bg-danger ms-2">ADMIN</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <li>
+                            <a class="dropdown-item" th:href="@{/admin/profil}">
+                                <i class="bi bi-person-gear me-2"></i>Mój profil
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form th:action="@{/logout}" method="post" style="display: inline;">
+                                <button type="submit" class="dropdown-item">
+                                    <i class="bi bi-box-arrow-right me-2"></i>Wyloguj się
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="bi bi-building"></i> Zarządzanie Bazami</h1>
+                    <p class="lead text-muted">Dodawaj, edytuj i usuwaj bazy transportowe w systemie</p>
+                </div>
+                <div>
+                    <a th:href="@{/admin/main}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Powrót do panelu
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formularz dodawania nowej bazy -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Dodaj nową bazę</h5>
+                </div>
+                <div class="card-body">
+                    <form class="form-card" id="addBazaForm">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Nr bazy:</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control"
+                                           id="nr_bazy" placeholder="Wpisz numer bazy"
+                                           required min="1">
+                                    <button class="btn btn-outline-secondary" type="button"
+                                            id="checkBazaBtn" onclick="checkBazaAvailability()">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">
+                                        <span id="bazaStatus" class="d-none">
+                                            <span class="status-indicator" id="statusIndicator"></span>
+                                            <span id="statusText"></span>
+                                        </span>
+                                    <span class="d-none" id="loadingStatus">
+                                            <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                                            Sprawdzanie dostępności...
+                                        </span>
+                                </div>
+                                <div class="invalid-feedback" id="nr_bazy_feedback">
+                                    Proszę podać numer bazy.
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Nazwa ulicy:</label>
+                                <input type="text" class="form-control"
+                                       id="nazwa_ulicy" placeholder="Nazwa ulicy" required>
+                                <div class="invalid-feedback">
+                                    Proszę podać nazwę ulicy.
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Nr domu:</label>
+                                <input type="text" class="form-control"
+                                       id="nr_porzadkowy_ulicy" placeholder="Nr domu" required>
+                                <div class="invalid-feedback">
+                                    Proszę podać numer domu.
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Kod pocztowy:</label>
+                                <input type="text" class="form-control narrow-font"
+                                       id="kod_pocztowy" placeholder="00-000" pattern="\d{2}-\d{3}"
+                                       required>
+                                <div class="form-text">Format: 00-000</div>
+                                <div class="invalid-feedback">
+                                    Proszę podać kod pocztowy w formacie 00-000.
+                                </div>
+                            </div>
+                            <div class="col-md-2 d-flex flex-column">
+                                <div class="mb-2" style="height: 24px;"></div>
+                                <button type="button" class="btn btn-primary w-100" id="submitBtn" onclick="saveBazaAjax()">
+                                    <i class="bi bi-plus-lg"></i> Dodaj bazę
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista istniejących baz -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-list-ul"></i> Lista baz</h5>
+                        <span class="badge bg-light text-dark">
+                            Liczba baz: <span id="bazyCount" th:text="${#lists.size(listBazy)}" class="fw-bold">0</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-dark">
+                            <tr>
+                                <th width="15%">Nr bazy</th>
+                                <th width="30%">Ulica</th>
+                                <th width="15%">Nr domu</th>
+                                <th width="15%">Kod pocztowy</th>
+                                <th width="25%">Operacje</th>
+                            </tr>
+                            </thead>
+                            <tbody id="bazyTableBody">
+                            <tr th:each="baza : ${listBazy}" th:id="'baza-row-' + ${baza.nr_bazy}">
+                                <td th:text="${baza.nr_bazy}"></td>
+                                <td>
+                                    <span th:text="${baza.nazwa_ulicy}" th:id="'nazwa-text-' + ${baza.nr_bazy}"></span>
+                                    <input type="text" class="form-control d-none"
+                                           th:id="'nazwa-input-' + ${baza.nr_bazy}"
+                                           th:value="${baza.nazwa_ulicy}">
+                                </td>
+                                <td>
+                                    <span th:text="${baza.nr_porzadkowy_ulicy}" th:id="'nr-ulicy-text-' + ${baza.nr_bazy}"></span>
+                                    <input type="text" class="form-control d-none"
+                                           th:id="'nr-ulicy-input-' + ${baza.nr_bazy}"
+                                           th:value="${baza.nr_porzadkowy_ulicy}">
+                                </td>
+                                <td>
+                                    <span th:text="${baza.kod_pocztowy}" th:id="'kod-text-' + ${baza.nr_bazy}"></span>
+                                    <input type="text" class="form-control narrow-font d-none"
+                                           th:id="'kod-input-' + ${baza.nr_bazy}"
+                                           th:value="${baza.kod_pocztowy}"
+                                           pattern="\d{2}-\d{3}">
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-primary btn-sm edit-btn"
+                                                th:onclick="'editBaza(' + ${baza.nr_bazy} + ')'">
+                                            <i class="bi bi-pencil"></i> Edytuj
+                                        </button>
+                                        <button type="button" class="btn btn-success btn-sm d-none save-btn"
+                                                th:onclick="'saveBaza(' + ${baza.nr_bazy} + ')'">
+                                            <i class="bi bi-save"></i> Zapisz
+                                        </button>
+                                        <button type="button" class="btn btn-secondary btn-sm d-none cancel-btn"
+                                                th:onclick="'cancelEdit(' + ${baza.nr_bazy} + ')'">
+                                            <i class="bi bi-x"></i> Anuluj
+                                        </button>
+                                        <button type="button" class="btn btn-danger btn-sm"
+                                                th:onclick="'deleteBaza(' + ${baza.nr_bazy} + ')'">
+                                            <i class="bi bi-trash"></i> Usuń
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(listBazy)}" id="emptyTableRow">
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    Brak baz w systemie. Dodaj pierwszą bazę używając formularza powyżej.
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer text-muted">
+                    <small>
+                        <i class="bi bi-info-circle"></i>
+                        Aby edytować bazę, kliknij przycisk "Edytuj", wprowadź zmiany i kliknij "Zapisz".
+                        Usuwanie bazy jest nieodwracalne.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informacje dodatkowe -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="alert alert-info">
+                <h5><i class="bi bi-lightbulb"></i> Informacje o bazach</h5>
+                <ul class="mb-0">
+                    <li>Każda baza musi mieć <strong>unikalny numer identyfikacyjny</strong></li>
+                    <li>System automatycznie sprawdza dostępność numeru bazy</li>
+                    <li>Baza może być przypisana do wielu pracowników i linii</li>
+                    <li>Usunięcie bazy spowoduje usunięcie wszystkich powiązanych rekordów</li>
+                    <li>Kod pocztowy musi być w formacie: <strong>00-000</strong></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055"></div>
+
+<!-- Bootstrap JS Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // ====================== GLOBAL STATE ======================
+    let bazaAvailable = false;
+    let checkingInProgress = false;
+
+    // ====================== TOAST FUNCTIONS ======================
+    function showToast(type, message) {
+        const colors = {
+            'success': {bg: 'text-bg-success', icon: 'bi-check-circle-fill'},
+            'error': {bg: 'text-bg-danger', icon: 'bi-exclamation-triangle-fill'},
+            'warning': {bg: 'text-bg-warning', icon: 'bi-exclamation-circle-fill'},
+            'info': {bg: 'text-bg-info', icon: 'bi-info-circle-fill'}
+        };
+
+        const toastId = 'toast-' + Date.now();
+        const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center ${colors[type].bg} border-0"
+             role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi ${colors[type].icon} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                        data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+
+        const container = document.querySelector('.toast-container');
+        container.insertAdjacentHTML('beforeend', toastHtml);
+
+        const toastEl = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastEl, {
+            animation: true,
+            autohide: true,
+            delay: 3000
+        });
+
+        toast.show();
+
+        toastEl.addEventListener('hidden.bs.toast', () => {
+            toastEl.remove();
+        });
+    }
+
+    // ====================== SPRAWDZANIE NUMERU BAZY ======================
+    function checkBazaAvailability() {
+        const nrBazyInput = document.getElementById('nr_bazy');
+        const nrBazy = nrBazyInput.value.trim();
+
+        if (!nrBazy || nrBazy < 1) {
+            showBazaStatus('error', 'Proszę podać prawidłowy numer bazy');
+            bazaAvailable = false;
+            updateSubmitButton();
+            return;
+        }
+
+        // Pokaż spinner
+        document.getElementById('loadingStatus').classList.remove('d-none');
+        document.getElementById('bazaStatus').classList.add('d-none');
+        checkingInProgress = true;
+        updateSubmitButton();
+
+        // Wyślij zapytanie AJAX
+        fetch(`/admin/checkBaza/${nrBazy}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    showBazaStatus('taken', `Numer bazy ${nrBazy} jest już zajęty!`);
+                    bazaAvailable = false;
+                } else {
+                    showBazaStatus('available', `Numer bazy ${nrBazy} jest dostępny`);
+                    bazaAvailable = true;
+                }
+            })
+            .catch(error => {
+                console.error('Błąd:', error);
+                showBazaStatus('error', 'Wystąpił błąd podczas sprawdzania');
+                bazaAvailable = false;
+            })
+            .finally(() => {
+                // Ukryj spinner
+                document.getElementById('loadingStatus').classList.add('d-none');
+                checkingInProgress = false;
+                updateSubmitButton();
+            });
+    }
+
+    function showBazaStatus(status, message) {
+        const statusElement = document.getElementById('bazaStatus');
+        const indicator = document.getElementById('statusIndicator');
+        const text = document.getElementById('statusText');
+
+        statusElement.classList.remove('d-none');
+
+        indicator.className = 'status-indicator';
+        if (status === 'available') {
+            indicator.classList.add('status-available');
+            text.className = 'text-success';
+        } else if (status === 'taken') {
+            indicator.classList.add('status-taken');
+            text.className = 'text-danger';
+        } else {
+            indicator.classList.add('status-taken');
+            text.className = 'text-danger';
+        }
+
+        text.textContent = message;
+    }
+
+    function updateSubmitButton() {
+        const submitBtn = document.getElementById('submitBtn');
+        const nrBazyInput = document.getElementById('nr_bazy');
+
+        if (checkingInProgress) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Sprawdzanie...';
+        } else if (nrBazyInput.value.trim() && bazaAvailable) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-plus-lg"></i> Dodaj bazę';
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-plus-lg"></i> Dodaj bazę';
+        }
+    }
+
+    // ====================== DODAWANIE BAZY (AJAX) ======================
+    function saveBazaAjax() {
+        // Walidacja przed wysłaniem
+        if (!bazaAvailable) {
+            showToast('error', 'Proszę sprawdzić dostępność numeru bazy przed dodaniem!');
+            return;
+        }
+
+        const kodPocztowy = document.getElementById('kod_pocztowy');
+        const zipPattern = /^\d{2}-\d{3}$/;
+        if (!zipPattern.test(kodPocztowy.value)) {
+            showToast('error', 'Proszę podać prawidłowy kod pocztowy w formacie 00-000');
+            kodPocztowy.focus();
+            return;
+        }
+
+        // Przygotuj dane
+        const bazaData = {
+            nr_bazy: parseInt(document.getElementById('nr_bazy').value),
+            nazwa_ulicy: document.getElementById('nazwa_ulicy').value,
+            nr_porzadkowy_ulicy: parseInt(document.getElementById('nr_porzadkowy_ulicy').value),
+            kod_pocztowy: document.getElementById('kod_pocztowy').value
+        };
+
+        // Pokaż loading
+        const submitBtn = document.getElementById('submitBtn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Dodawanie...';
+
+        // Wyślij przez AJAX
+        fetch('/admin/saveBazaAjax', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(bazaData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.type, data.message);
+
+                    // Wyczyść formularz
+                    document.getElementById('addBazaForm').reset();
+                    bazaAvailable = false;
+                    document.getElementById('bazaStatus').classList.add('d-none');
+                    updateSubmitButton();
+
+                    // Dodaj nowy wiersz do tabeli
+                    addBazaToTable(bazaData);
+
+                    // Zaktualizuj licznik
+                    updateBazyCount();
+                } else {
+                    showToast(data.type, data.message);
+                }
+            })
+            .catch(error => {
+                showToast('error', 'Błąd połączenia z serwerem');
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+    }
+
+    function addBazaToTable(baza) {
+        // Usuń komunikat o pustej tabeli jeśli istnieje
+        const emptyRow = document.getElementById('emptyTableRow');
+        if (emptyRow) {
+            emptyRow.remove();
+        }
+
+        const tableBody = document.getElementById('bazyTableBody');
+        const newRow = document.createElement('tr');
+        newRow.id = `baza-row-${baza.nr_bazy}`;
+
+        newRow.innerHTML = `
+        <td>${baza.nr_bazy}</td>
+        <td>
+            <span id="nazwa-text-${baza.nr_bazy}">${baza.nazwa_ulicy}</span>
+            <input type="text" class="form-control d-none"
+                   id="nazwa-input-${baza.nr_bazy}"
+                   value="${baza.nazwa_ulicy}">
+        </td>
+        <td>
+            <span id="nr-ulicy-text-${baza.nr_bazy}">${baza.nr_porzadkowy_ulicy}</span>
+            <input type="text" class="form-control d-none"
+                   id="nr-ulicy-input-${baza.nr_bazy}"
+                   value="${baza.nr_porzadkowy_ulicy}">
+        </td>
+        <td>
+            <span id="kod-text-${baza.nr_bazy}">${baza.kod_pocztowy}</span>
+            <input type="text" class="form-control narrow-font d-none"
+                   id="kod-input-${baza.nr_bazy}"
+                   value="${baza.kod_pocztowy}"
+                   pattern="\\d{2}-\\d{3}">
+        </td>
+        <td>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-primary btn-sm edit-btn"
+                        onclick="editBaza(${baza.nr_bazy})">
+                    <i class="bi bi-pencil"></i> Edytuj
+                </button>
+                <button type="button" class="btn btn-success btn-sm d-none save-btn"
+                        onclick="saveBaza(${baza.nr_bazy})">
+                    <i class="bi bi-save"></i> Zapisz
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm d-none cancel-btn"
+                        onclick="cancelEdit(${baza.nr_bazy})">
+                    <i class="bi bi-x"></i> Anuluj
+                </button>
+                <button type="button" class="btn btn-danger btn-sm"
+                        onclick="deleteBaza(${baza.nr_bazy})">
+                    <i class="bi bi-trash"></i> Usuń
+                </button>
+            </div>
+        </td>
+    `;
+
+        tableBody.appendChild(newRow);
+    }
+
+    // ====================== EDYCJA BAZY (AJAX) ======================
+    function editBaza(id) {
+        // Ukryj przycisk edytuj, pokaż zapisz i anuluj
+        document.querySelector(`button.edit-btn[onclick*="${id}"]`).classList.add('d-none');
+        document.querySelector(`button.save-btn[onclick*="${id}"]`).classList.remove('d-none');
+        document.querySelector(`button.cancel-btn[onclick*="${id}"]`).classList.remove('d-none');
+
+        // Zamień spany na inputy
+        document.getElementById(`nazwa-text-${id}`).classList.add('d-none');
+        document.getElementById(`nazwa-input-${id}`).classList.remove('d-none');
+
+        document.getElementById(`nr-ulicy-text-${id}`).classList.add('d-none');
+        document.getElementById(`nr-ulicy-input-${id}`).classList.remove('d-none');
+
+        document.getElementById(`kod-text-${id}`).classList.add('d-none');
+        document.getElementById(`kod-input-${id}`).classList.remove('d-none');
+    }
+
+    function cancelEdit(id) {
+        // Przywróć przyciski
+        document.querySelector(`button.edit-btn[onclick*="${id}"]`).classList.remove('d-none');
+        document.querySelector(`button.save-btn[onclick*="${id}"]`).classList.add('d-none');
+        document.querySelector(`button.cancel-btn[onclick*="${id}"]`).classList.add('d-none');
+
+        // Przywróć spany, ukryj inputy
+        document.getElementById(`nazwa-text-${id}`).classList.remove('d-none');
+        document.getElementById(`nazwa-input-${id}`).classList.add('d-none');
+
+        document.getElementById(`nr-ulicy-text-${id}`).classList.remove('d-none');
+        document.getElementById(`nr-ulicy-input-${id}`).classList.add('d-none');
+
+        document.getElementById(`kod-text-${id}`).classList.remove('d-none');
+        document.getElementById(`kod-input-${id}`).classList.add('d-none');
+    }
+
+    function saveBaza(id) {
+        const bazaData = {
+            nr_bazy: id,
+            nazwa_ulicy: document.getElementById(`nazwa-input-${id}`).value,
+            nr_porzadkowy_ulicy: parseInt(document.getElementById(`nr-ulicy-input-${id}`).value),
+            kod_pocztowy: document.getElementById(`kod-input-${id}`).value
+        };
+
+        // Walidacja kodu pocztowego
+        const zipPattern = /^\d{2}-\d{3}$/;
+        if (!zipPattern.test(bazaData.kod_pocztowy)) {
+            showToast('error', 'Nieprawidłowy format kodu pocztowego. Wymagany format: 00-000');
+            return;
+        }
+
+        // Pokaż loading na przycisku
+        const saveBtn = document.querySelector(`button.save-btn[onclick*="${id}"]`);
+        const originalText = saveBtn.innerHTML;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        // Wyślij przez AJAX
+        fetch('/admin/updateBazaAjax', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(bazaData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Zaktualizuj widok
+                    document.getElementById(`nazwa-text-${id}`).textContent = bazaData.nazwa_ulicy;
+                    document.getElementById(`nr-ulicy-text-${id}`).textContent = bazaData.nr_porzadkowy_ulicy;
+                    document.getElementById(`kod-text-${id}`).textContent = bazaData.kod_pocztowy;
+
+                    // Przywróć widok (zamykamy tryb edycji)
+                    cancelEdit(id);
+
+                    // Pokaż toast
+                    showToast('success', data.message);
+
+                    // Efekt wizualny
+                    const row = document.getElementById(`baza-row-${id}`);
+                    row.classList.add('table-success');
+                    setTimeout(() => row.classList.remove('table-success'), 1000);
+                } else {
+                    showToast('error', data.message);
+                }
+            })
+            .catch(error => {
+                showToast('error', 'Wystąpił błąd podczas zapisywania');
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+            });
+    }
+
+    // ====================== USUWANIE BAZY (AJAX) ======================
+    function deleteBaza(id) {
+        if (!confirm(`Czy na pewno chcesz usunąć bazę nr ${id}?`)) {
+            return;
+        }
+
+        const deleteBtn = document.querySelector(`button[onclick*="deleteBaza(${id})"]`);
+        const originalText = deleteBtn.innerHTML;
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        fetch(`/admin/deleteBazaAjax/${id}`, {
+            method: 'DELETE'
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('success', data.message);
+
+                    // Usuń wiersz z animacją
+                    const row = document.getElementById(`baza-row-${id}`);
+                    if (row) {
+                        row.classList.add('fade-out');
+                        setTimeout(() => {
+                            row.remove();
+
+                            // Jeśli tabela pusta, pokaż komunikat
+                            if (document.querySelectorAll('#bazyTableBody tr:not(#emptyTableRow)').length === 0) {
+                                const tableBody = document.getElementById('bazyTableBody');
+                                tableBody.innerHTML = `
+                            <tr id="emptyTableRow">
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    Brak baz w systemie. Dodaj pierwszą bazę używając formularza powyżej.
+                                </td>
+                            </tr>
+                        `;
+                            }
+
+                            // Zaktualizuj licznik
+                            updateBazyCount();
+                        }, 500);
+                    }
+                } else {
+                    showToast('warning', data.message);
+                }
+            })
+            .catch(error => {
+                showToast('error', 'Wystąpił błąd podczas usuwania');
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = originalText;
+            });
+    }
+
+    // ====================== POMOCNICZE FUNKCJE ======================
+    function updateBazyCount() {
+        const count = document.querySelectorAll('#bazyTableBody tr:not(#emptyTableRow)').length;
+        const countElement = document.getElementById('bazyCount');
+        if (countElement) {
+            countElement.textContent = count;
+        }
+    }
+
+    // ====================== INICJALIZACJA ======================
+    document.addEventListener('DOMContentLoaded', function() {
+        // Automatyczne sprawdzanie przy zmianie numeru bazy
+        document.getElementById('nr_bazy').addEventListener('input', function() {
+            bazaAvailable = false;
+            document.getElementById('bazaStatus').classList.add('d-none');
+            updateSubmitButton();
+
+            clearTimeout(window.bazaCheckTimeout);
+            window.bazaCheckTimeout = setTimeout(() => {
+                if (this.value.trim() && this.value >= 1) {
+                    checkBazaAvailability();
+                }
+            }, 1000);
+        });
+
+        // Automatyczne formatowanie kodu pocztowego
+        document.getElementById('kod_pocztowy').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 2) {
+                value = value.substring(0, 2) + '-' + value.substring(2, 5);
+            }
+            e.target.value = value;
+        });
+
+        // Inicjalizacja dropdownów Bootstrap
+        var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+        dropdownElementList.forEach(function(dropdownToggleEl) {
+            new bootstrap.Dropdown(dropdownToggleEl);
+        });
+
+        // Jeśli są komunikaty z backendu (flash messages), pokaż jako toasty
+        const successMessage = /*[[${success}]]*/ null;
+        const errorMessage = /*[[${error}]]*/ null;
+
+        if (successMessage) {
+            showToast('success', successMessage);
+        }
+
+        if (errorMessage) {
+            showToast('error', errorMessage);
+        }
+    });
+</script>
+</body>
+</html>

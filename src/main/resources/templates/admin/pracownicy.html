@@ -1,0 +1,147 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleafextras-springsecurity6">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Zarządzanie Pracownikami</title>
+    <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.7/css/bootstrap.min.css} "/>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+            crossorigin="anonymous"></script>
+</head>
+<body>
+<!-- Navigation - skopiuj taką samą jak w admin_main.html -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
+    <div class="container">
+        <a class="navbar-brand" href="/admin/main">Panel Administratora</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive"
+                aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        Zarządzaj tabelami
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" th:href="@{/admin_main}">Bazy</a></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/pracownicy}">Pracownicy</a></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/przystanki}">Przystanki</a></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/kursy}">Kursy</a></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/linia-przystanek}">Linia-Przystanek</a></li>
+                        <li><a class="dropdown-item" th:href="@{/admin/administratorzy}">Administratorzy</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="">Zalogowany jako
+                        <b style="color:lightskyblue; text-transform:capitalize"
+                           sec:authentication="principal.imie"></b>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <form th:action="@{/logout}" method="post" th:hidden="true" name="LogoutForm">
+                        <input type="submit" value="Logout" />
+                    </form>
+                    <a class="nav-link" href="javascript:document.LogoutForm.submit()">Wyloguj się</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12 mt-4">
+            <h2>Zarządzanie Pracownikami</h2>
+
+            <!-- Formularz dodawania nowego pracownika -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Dodaj nowego pracownika</h5>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/admin/savePracownik}" th:object="${pracownik}" method="post">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Nr pracownika:</label>
+                                    <input type="text" class="form-control" th:field="*{nr_pracownika}"
+                                           placeholder="Numer pracownika" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Imię:</label>
+                                    <input type="text" class="form-control" th:field="*{imie}"
+                                           placeholder="Imię" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Nazwisko:</label>
+                                    <input type="text" class="form-control" th:field="*{nazwisko}"
+                                           placeholder="Nazwisko" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <button type="submit" class="btn btn-success form-control">Dodaj pracownika</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Lista pracowników -->
+            <div class="card">
+                <div class="card-header">
+                    <h5>Lista pracowników</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>Nr pracownika</th>
+                            <th>Imię</th>
+                            <th>Nazwisko</th>
+                            <th>Operacje</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="pracownik : ${listPracownicy}">
+                            <form th:action="@{/admin/updatePracownik}" th:object="${pracownik}" method="post">
+                                <td>
+                                    <input type="text" class="form-control" name="nr_pracownika"
+                                           th:value="${pracownik.nr_pracownika}" readonly>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control" name="imie"
+                                           th:value="${pracownik.imie}">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control" name="nazwisko"
+                                           th:value="${pracownik.nazwisko}">
+                                </td>
+                                <td>
+                                    <button type="submit" class="btn btn-primary btn-sm">Zapisz</button>
+                                    <a th:href="@{'/admin/deletePracownik/' + ${pracownik.nr_pracownika}}"
+                                       class="btn btn-danger btn-sm"
+                                       onclick="return confirm('Czy na pewno chcesz usunąć tego pracownika?')">
+                                        Usuń
+                                    </a>
+                                </td>
+                            </form>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
